@@ -3,7 +3,9 @@ Title: CropSyst Crop Evapotranspiration Modeling Framework
 Version: 0.0.1
 Authors@R: 
     person("Matthew", "Pruett", , "matthew.pruett@example.com", role = c("aut", "cre"))
-Description: To fill in later
+Description: 'cropsyst' is in development and will provide an R 
+    implementation of CropSyst ET developed by Claudio Stockle. This package 
+    is used to estimate crop evapotranspiration.
 License: MIT + file LICENSE
 Suggests: 
     testthat (>= 3.0.0)
