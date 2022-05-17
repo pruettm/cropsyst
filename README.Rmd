@@ -29,9 +29,12 @@ devtools::install_github("pruettm/cropsyst")
 
 ## Vignette
 
-An overview of the package functions input data and parameters can be found in the vignette "cs_overview" and can be loaded with the below code.
+An overview of the package functions input data and parameters can be found in the vignette "cs_overview" and can be loaded with the below code. Please install cropsyst with `build_vignettes = TRUE` to load included vignette.
 
 ```{r vignette}
+
+devtools::install_github("pruettm/cropsyst", build_vignettes = TRUE)
+
 library(cropsyst)
 
 vignette("cs_overview")
