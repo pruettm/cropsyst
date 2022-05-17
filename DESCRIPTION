@@ -8,6 +8,9 @@ Description: 'cropsyst' is in development and will provide an R
     is used to estimate crop evapotranspiration.
 License: MIT + file LICENSE
 Suggests: 
+    knitr,
+    tidyverse,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Encoding: UTF-8
@@ -16,3 +19,9 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 URL: https://github.com/pruettm/cropsyst
 BugReports: https://github.com/pruettm/cropsyst/issues
+Depends: 
+    R (>= 2.10)
+Imports: 
+    lubridate,
+    dplyr
+VignetteBuilder: knitr

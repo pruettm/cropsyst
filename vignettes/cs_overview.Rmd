@@ -1,0 +1,283 @@
+---
+title: "CropSyst Tutorial"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{cs_overview}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteDepends{tidyverse} 
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align = "center",
+  fig.asp = 0.618,
+  fig.width = 5,
+  out.width = "70%",
+  fig.retina = 3
+)
+```
+
+```{r setup}
+library(tidyverse)
+library(cropsyst)
+```
+
+# Model construction
+
+The constructor function `cs_setup()` is used to initialize an empty cropsyst model object to which additional model parameters can be added using the following functions:
+
+- `cs_add_weather()` 
+- `cs_add_soil()`
+- `cs_add_canopy_cover()`
+- `cs_add_crop()`
+- `cs_add_irrigation()` (optional)
+
+# Input Data and parameters
+
+## Weather
+
+Daily weather data is required and shouild be inlcuded as a data frame and follow the naming format below.
+
+### Input Data Set
+
+Input weather data should be at a continuous daily time scale and contain the following columns
+
+- **date** Date of observation should ba a Date object
+- **precip** Total daily precipitation (mm)
+- **tmax** Maximum daily temperature (°C)
+- **tmin** Minimum daily temperature (°C)
+- **s_rad** Total daily solar radiation (MJ/m2)
+- **rh_max** Maximum relative humidity (%)
+- **rh_min** Minimum relative humidity (%)
+- **wind_speed** Average daily wind speed (m/s)
+
+An example dataset `cs_weather` is provided with cropsyst and is shown below:
+```{r weather_data, echo=FALSE}
+head(cs_weather)
+```
+
+### Additional Parameters
+
+- **latitude** location latitude (degrees)
+- **elevation** location elevation (m)
+- **screening_height** wind speed measurement height (m)
+
+## Soil
+
+### Input Data Set
+
+Soil data should contain the following columns
+
+- **horizon_thickness** Thickness of soil horizon (m)
+- **sand_pct** Percent of horizon composed of sand (%)
+- **clay_pct** Percent of horizon composed of clay (%)
+- **silt_pct** Percent of horizon composed of silt (%)
+- **initial_wc** Initial water content on first day of planting (m3/m3)
+
+
+An example dataset `cs_soil` is provided with cropsyst and is shown below:
+```{r soil_data, echo=FALSE}
+head(cs_soil)
+```
+
+### Additional Parameters
+
+- **thickness_evaporative_layer** location latitude (degrees)
+
+## Canopy Cover
+
+### Input Data Set
+
+- **gcc** Green canopy cover
+- **tcc** Total canopy cover
+- **dap** Day after planting
+
+An example dataset `cs_canopy_cover` is provided with cropsyst and is shown below:
+```{r canopy_cover, echo=FALSE}
+head(cs_canopy_cover)
+```
+
+## Irrigation
+
+Cropsyst simulations are able to use 3 irrigation scenarios
+
+1. Scheduled irrigation
+2. Auto irrigation
+3. No irrigation
+
+### Input Data Set
+- **dap** Day after planting
+- **irrigation** Irrigation (mm)
+
+An example dataset `cs_irrigation` is provided with cropsyst and is shown below:
+```{r irrigation, echo=FALSE}
+head(cs_irrigation)
+```
+
+### Additional Parameters
+
+- **irrigated_fraction** fraction of land irrigated in simulated area
+- **max_allowable_depletion** Max soil water dfepletion which triggers irrigation
+- **min_leaf_water_potential** Min leaf water potential which triggers irrigation
+- **max_system_capacity** Max irrigation daily capacity
+- **dae_first_irrigation** Day after emergence of first irrigation
+
+## Crop Parameters
+
+- **planting_date** Planting date
+- **harvest_date** Harvest date
+- **midseason_et_crop_coef** mid season ET crop coefficient
+- **tree_fruit** logical TRUE if tree fruit crop
+- **fruit_harvest_date** harvest date of tree fruit
+- **max_crop_height** max crop height (m)
+- **max_root_depth** max root depth (m)
+- **perrenial** logical TRUE if perennial
+- **max_water_uptake** max water uptake
+- **transpiration_use_eff** transpiration use efficiency
+- **C3** C3 = TRUE c4 = FALSE
+
+
+# Model Setup
+
+```{r cropsyst_object}
+cs_input <- cs_setup() |> 
+  cs_add_weather(weather = cs_weather, 
+                 latitude = 35.2, 
+                 elevation = 1170,
+                 screening_height = 2) |> 
+  cs_add_soil(soil = cs_soil, 
+              thickness_evaporative_layer = 0.005) |> 
+  cs_add_canopy_cover(cs_canopy_cover) |> 
+  cs_add_irrigation(cs_irrigation, 
+                    irrigated_fraction = 0.0001) |> 
+  cs_add_crop(planting_date = ydoy(2016, 131), 
+              harvest_date = ydoy(2016, 131+156-1),
+              midseason_et_crop_coef = 1.15,
+              tree_fruit = FALSE,
+              fruit_harvest_date = ydoy(2016, 131+153),
+              max_crop_height = 2,
+              max_root_depth = 2, 
+              perrenial = FALSE, 
+              max_water_uptake = 14, 
+              transpiration_use_eff = 7, 
+              C3 = FALSE)
+```
+
+# Run Model
+
+```{r run_model}
+
+cs_out <- cs_input |> cs_run()
+
+```
+
+# Model Output
+
+The model output maintains the form of the model input with weather, irr_soil, and non_irr_soil as data frames and params as a list of model input parameters.
+
+```{r model_output_names}
+names(cs_out)
+```
+
+
+## Potential ET
+
+```{r potential_et}
+
+cs_out$weather |> 
+  ggplot() +
+  geom_line(aes(x = dap, y = potential_crop_et))
+
+
+```
+
+## Crop ET Coeficcient
+
+```{r crop_coef}
+
+cs_out$weather |> 
+  ggplot() +
+  geom_line(aes(x = dap, y = et_crop_coef)) 
+
+
+```
+
+## Crop Growth
+
+```{r crop_growth}
+
+cs_out$weather |> 
+  ggplot() +
+  geom_line(aes(x = dap, y = -root_depth, color = "Root Depth")) +
+  geom_line(aes(x = dap, y = crop_height, color = "Crop Height")) +
+  labs(x = "Days after planting", y = "Height (m)")
+
+
+```
+
+## Biomass
+
+```{r biomass_production}
+
+cs_out$weather |> 
+  ggplot() +
+  geom_line(aes(x = dap, y = potential_biomass_prod, color = "potential")) +
+  geom_line(aes(x = dap, y = biomass_production, color = "actual"))
+
+cs_out$weather |> 
+  ggplot() +
+  geom_line(aes(x = dap, y = cum_biomass_production))
+
+
+```
+
+## Transpiration
+
+```{r transpiration}
+
+
+cs_out$weather |> 
+  ggplot() +
+  geom_line(aes(x = dap, y = attainable_transpiration, color = "Attainable")) +
+  geom_line(aes(x = dap, y = potential_transpiration, color = "Potential")) +
+  geom_line(aes(x = dap, y = actual_transpiration, color = "Actual"))
+
+
+```
+
+## Soil Water Evaporation
+
+```{r soil_water_evap}
+
+
+cs_out$weather |> 
+  ggplot() +
+  geom_line(aes(x = dap, y = attainable_soil_water_evaporation, color = "Attainable")) +
+  geom_line(aes(x = dap, y = irr_zone_soil_water_evap, color = "Irrigated")) +
+  geom_line(aes(x = dap, y = non_irr_zone_soil_water_evap, color = "Non-Irrigated"))
+
+
+```
+
+# Leaf Water Potential
+
+```{r leaf_water_pot}
+
+
+cs_out$weather |> 
+  ggplot() +
+  geom_line(aes(x = dap, y = leaf_water_potential)) 
+
+
+```
+
+# Actual Evapotranspiration
+
+```{r actual_et}
+cs_out$weather |> 
+  ggplot() +
+  geom_line(aes(x = dap, y = actual_evapotranspiration)) 
+```
