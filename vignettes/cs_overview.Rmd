@@ -143,16 +143,16 @@ head(cs_irrigation)
 # Model Setup
 
 ```{r cropsyst_object}
-cs_input <- cs_setup() |> 
+cs_input <- cs_setup() %>% 
   cs_add_weather(weather = cs_weather, 
                  latitude = 35.2, 
                  elevation = 1170,
-                 screening_height = 2) |> 
+                 screening_height = 2) %>% 
   cs_add_soil(soil = cs_soil, 
-              thickness_evaporative_layer = 0.005) |> 
-  cs_add_canopy_cover(cs_canopy_cover) |> 
+              thickness_evaporative_layer = 0.005) %>% 
+  cs_add_canopy_cover(cs_canopy_cover) %>% 
   cs_add_irrigation(cs_irrigation, 
-                    irrigated_fraction = 0.0001) |> 
+                    irrigated_fraction = 0.0001) %>% 
   cs_add_crop(planting_date = ydoy(2016, 131), 
               harvest_date = ydoy(2016, 131+156-1),
               midseason_et_crop_coef = 1.15,
@@ -170,7 +170,7 @@ cs_input <- cs_setup() |>
 
 ```{r run_model}
 
-cs_out <- cs_input |> cs_run()
+cs_out <- cs_input %>% cs_run()
 
 ```
 
@@ -187,7 +187,7 @@ names(cs_out)
 
 ```{r potential_et}
 
-cs_out$weather |> 
+cs_out$weather %>% 
   ggplot() +
   geom_line(aes(x = dap, y = potential_crop_et))
 
@@ -198,7 +198,7 @@ cs_out$weather |>
 
 ```{r crop_coef}
 
-cs_out$weather |> 
+cs_out$weather %>% 
   ggplot() +
   geom_line(aes(x = dap, y = et_crop_coef)) 
 
@@ -209,7 +209,7 @@ cs_out$weather |>
 
 ```{r crop_growth}
 
-cs_out$weather |> 
+cs_out$weather %>% 
   ggplot() +
   geom_line(aes(x = dap, y = -root_depth, color = "Root Depth")) +
   geom_line(aes(x = dap, y = crop_height, color = "Crop Height")) +
@@ -222,12 +222,12 @@ cs_out$weather |>
 
 ```{r biomass_production}
 
-cs_out$weather |> 
+cs_out$weather %>% 
   ggplot() +
   geom_line(aes(x = dap, y = potential_biomass_prod, color = "potential")) +
   geom_line(aes(x = dap, y = biomass_production, color = "actual"))
 
-cs_out$weather |> 
+cs_out$weather %>% 
   ggplot() +
   geom_line(aes(x = dap, y = cum_biomass_production))
 
@@ -239,7 +239,7 @@ cs_out$weather |>
 ```{r transpiration}
 
 
-cs_out$weather |> 
+cs_out$weather %>% 
   ggplot() +
   geom_line(aes(x = dap, y = attainable_transpiration, color = "Attainable")) +
   geom_line(aes(x = dap, y = potential_transpiration, color = "Potential")) +
@@ -253,7 +253,7 @@ cs_out$weather |>
 ```{r soil_water_evap}
 
 
-cs_out$weather |> 
+cs_out$weather %>% 
   ggplot() +
   geom_line(aes(x = dap, y = attainable_soil_water_evaporation, color = "Attainable")) +
   geom_line(aes(x = dap, y = irr_zone_soil_water_evap, color = "Irrigated")) +
@@ -267,7 +267,7 @@ cs_out$weather |>
 ```{r leaf_water_pot}
 
 
-cs_out$weather |> 
+cs_out$weather %>% 
   ggplot() +
   geom_line(aes(x = dap, y = leaf_water_potential)) 
 
@@ -277,7 +277,8 @@ cs_out$weather |>
 # Actual Evapotranspiration
 
 ```{r actual_et}
-cs_out$weather |> 
+cs_out$weather %>% 
   ggplot() +
   geom_line(aes(x = dap, y = actual_evapotranspiration)) 
 ```
+s
