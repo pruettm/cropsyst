@@ -13,7 +13,7 @@ cs_setup <- function(file_path = NULL){
 
     cs <- structure(list(), class = "cropsyst")
     # Default no irrigation
-    cs$params <- list(irrigated_fraction = 0, auto_irrigation = FALSE)
+    cs$params <- list(irrigated_fraction = 0, auto_irrigation = FALSE, overhead_irrigation = FALSE)
     return(cs)
   }
 }
@@ -80,6 +80,7 @@ cs_add_canopy_cover <- function(cs, canopy_cover){
 #' @param min_leaf_water_potential Min leaf water potential which triggers irrigation
 #' @param max_system_capacity Max irrigation daily capacity
 #' @param dae_first_irrigation Day after emergence of first irrigation
+#' @param overhead_irrigation logical is irrigation applied overhead defaults to FALSE
 #'
 #' @return cropsyst object with added irrigation data and parameters
 #' @export
@@ -90,7 +91,8 @@ cs_add_irrigation <- function(cs, irrigation,
                               max_allowable_depletion,
                               min_leaf_water_potential,
                               max_system_capacity,
-                              dae_first_irrigation){
+                              dae_first_irrigation,
+                              overhead_irrigation = FALSE){
 
   if(!missing(irrigation)){
     cs$irrigation <- irrigation
@@ -106,6 +108,7 @@ cs_add_irrigation <- function(cs, irrigation,
     cs$params$max_system_capacity <- max_system_capacity
     # cs$params$min_depth_water_application <- min_depth_water_application
     cs$params$dae_first_irrigation <- dae_first_irrigation
+    cs$params$overhead_irrigation <- overhead_irrigation
   }
 
   cs$params$irrigated_fraction <- irrigated_fraction
@@ -228,22 +231,13 @@ cs_run <- function(cs){
   }
 
 
-  # Calc canopy interception
-  cs$weather$total_canopy_interception <-
-    calc_canopy_interception(cs$weather$tcc,
-                             cs$weather$precip,
-                             cs$weather$irrigation)
+  # Add variables for for loop
+  cs$weather$canopy_interception <- 0
+  cs$weather$today_canopy_interception <- 0
 
-  cs$weather$canopy_interception <-
-    cs$weather$total_canopy_interception -
-    dplyr::lag(cs$weather$total_canopy_interception, default = 0)
+  cs$weather$irr_input <- 0
+  cs$weather$non_irr_input <- 0
 
-
-  # calculate soil water input after canopy interception
-  cs$weather$irr_input <- pmax(cs$weather$precip + cs$weather$irrigation - cs$weather$canopy_interception, 0)
-  cs$weather$non_irr_input <- pmax(cs$weather$precip - cs$weather$canopy_interception, 0)
-
-  # Add variables for loop
   # Water Depth
   cs$weather$irr_initial_water_depth <- NA
   cs$weather$non_irr_initial_water_depth <- NA
@@ -277,6 +271,17 @@ cs_run <- function(cs){
   cs$non_irr_soil <- cs$soil
 
   for (i in cs$weather$dap) {
+
+    if (i > 1) {
+      # Calc canopy interception
+      cs$weather <-
+        calc_canopy_interception(cs$weather, i, cs$params$overhead_irrigation)
+    }
+
+    # calculate soil water input after canopy interception
+    cs$weather$irr_input[i] <- max(cs$weather$precip[i] + cs$weather$irrigation[i] - cs$weather$today_canopy_interception[i], 0)
+    cs$weather$non_irr_input[i] <- max(cs$weather$precip[i] - cs$weather$today_canopy_interception[i], 0)
+
     cs$weather$irr_initial_water_depth[i] <-
       sum(cs$irr_soil[[paste0("wc_", i-1)]]*cs$soil$layer_thickness*water_density)
     cs$weather$non_irr_initial_water_depth[i] <-

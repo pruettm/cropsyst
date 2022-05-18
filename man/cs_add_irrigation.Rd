@@ -11,7 +11,8 @@ cs_add_irrigation(
   max_allowable_depletion,
   min_leaf_water_potential,
   max_system_capacity,
-  dae_first_irrigation
+  dae_first_irrigation,
+  overhead_irrigation = FALSE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ cs_add_irrigation(
 \item{max_system_capacity}{Max irrigation daily capacity}
 
 \item{dae_first_irrigation}{Day after emergence of first irrigation}
+
+\item{overhead_irrigation}{logical is irrigation applied overhead defaults to FALSE}
 }
 \value{
 cropsyst object with added irrigation data and parameters

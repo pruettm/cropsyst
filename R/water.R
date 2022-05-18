@@ -21,21 +21,25 @@ calc_potential_crop_et <- function(weather, total_canopy_cover, green_canopy_cov
 }
 
 
-calc_canopy_interception <- function(total_canopy_cover, precip, irrigation){
-  # what does this mean?
-  if(missing(irrigation)){irrigation <- rep(0, length(total_canopy_cover))}
+calc_canopy_interception <- function(weather, dae, overhead_irrigation){
 
-  max_canopy_interception  <- 1 #mm
-  available_canopy_interception <- max_canopy_interception*total_canopy_cover
-
-  canopy_interception <- rep(0, length(total_canopy_cover))
-
-  for (dae in 2:length(total_canopy_cover)) {
-    canopy_interception[dae] <-
-      min(canopy_interception[dae-1] + precip[dae] + irrigation[dae],
-           available_canopy_interception[dae])
+  if (overhead_irrigation) {
+    irrigation <- weather$irrigation[dae]
+  } else {
+    irrigation <- 0
   }
-  return(canopy_interception)
+  max_canopy_interception  <- 1 #mm
+  available_canopy_interception <- max_canopy_interception*weather$tcc[dae]
+
+  weather$canopy_interception[dae] <-
+    min(weather$canopy_interception[dae-1] + weather$precip[dae] + irrigation,
+        available_canopy_interception)
+
+  weather$today_canopy_interception[dae] <-
+    weather$canopy_interception[dae] -
+    weather$canopy_interception[dae-1]
+
+  return(weather)
 }
 
 water_infiltration <- function(input, wc_day_before, field_capacity, thickness){
@@ -83,9 +87,9 @@ actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
     canopy_evaporation <- weather$canopy_interception[dae]
     weather$canopy_interception[dae] <- 0
   } else {
-    weather$attainable_transpiration[dae] <- 1E-6
-    canopy_evaporation <- weather$attainable_transpiration[dae]
     weather$canopy_interception[dae] <- weather$canopy_interception[dae] - weather$attainable_transpiration[dae]
+    canopy_evaporation <- weather$attainable_transpiration[dae]
+    weather$attainable_transpiration[dae] <- 1E-6
   }
 
   potential_transpiration <- weather$attainable_transpiration[dae]
