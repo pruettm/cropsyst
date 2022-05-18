@@ -93,7 +93,7 @@ actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
   }
 
   potential_transpiration <- weather$attainable_transpiration[dae]
-  frac_canopy_interception_sr <- weather$tcc[dae]
+  frac_canopy_interception_sr <- dplyr::lag(weather$gcc, default = 1E-6)[dae]
   max_water_uptake <- max_water_uptake_cc_one*frac_canopy_interception_sr
 
   attainable_crop_uptake <- min(potential_transpiration, max_water_uptake)
@@ -288,25 +288,47 @@ actual_soil_water_evaporation <- function(weather,
     pmax((non_irr_sublayer_wc - air_dry_wc)*top_layer_thickness*water_density*
            delay_factor, 0)
 
-  irr_soil_water_evap <-
-    dplyr::case_when(irr_sublayer_wc > pwp_top_layer ~ irr_potential_evaporation,
-                     irr_sublayer_wc > air_dry_wc & irr_sublayer_wc <= pwp_top_layer ~
-                       irr_potential_evaporation*
-                       ((irr_sublayer_wc - air_dry_wc)/(pwp_top_layer - air_dry_wc))^2,
-                     irr_sublayer_wc <= air_dry_wc ~ 0)
+  irr_soil_water_evap <- rep(NA, n_evaporation_sublayers)
+  non_irr_soil_water_evap <- rep(NA, n_evaporation_sublayers)
 
-  irr_soil_water_evap <- pmin(irr_soil_water_evap, max_attainable_irr_soil_water_evap)
-  irr_potential_evaporation <- pmax(irr_potential_evaporation - irr_soil_water_evap, 0)
+  for (i in 1:n_evaporation_sublayers) {
+    irr_soil_water_evap[i] <-
+      dplyr::case_when(irr_sublayer_wc[i] > pwp_top_layer ~ irr_potential_evaporation,
+                       irr_sublayer_wc[i] > air_dry_wc & irr_sublayer_wc[i] <= pwp_top_layer ~
+                         irr_potential_evaporation*
+                         ((irr_sublayer_wc[i] - air_dry_wc)/(pwp_top_layer - air_dry_wc))^2,
+                       irr_sublayer_wc[i] <= air_dry_wc ~ 0)
+    irr_soil_water_evap[i] <- min(irr_soil_water_evap[i], max_attainable_irr_soil_water_evap[i])
+    irr_potential_evaporation <- max(0, irr_potential_evaporation - irr_soil_water_evap[i])
 
-  non_irr_soil_water_evap <-
-    dplyr::case_when(non_irr_sublayer_wc > pwp_top_layer ~ non_irr_potential_evaporation,
-                     non_irr_sublayer_wc > air_dry_wc & non_irr_sublayer_wc <= pwp_top_layer ~
-                       non_irr_potential_evaporation*
-                       ((non_irr_sublayer_wc - air_dry_wc)/(pwp_top_layer - air_dry_wc))^2,
-                     non_irr_sublayer_wc <= air_dry_wc ~ 0)
-  non_irr_soil_water_evap <- pmin(non_irr_soil_water_evap, max_attainable_non_irr_soil_water_evap)
-  non_irr_potential_evaporation <- pmax(non_irr_potential_evaporation - non_irr_soil_water_evap, 0)
+    non_irr_soil_water_evap[i] <-
+      dplyr::case_when(non_irr_sublayer_wc[i] > pwp_top_layer ~ non_irr_potential_evaporation,
+                       non_irr_sublayer_wc[i] > air_dry_wc & non_irr_sublayer_wc[i] <= pwp_top_layer ~
+                         non_irr_potential_evaporation*
+                         ((non_irr_sublayer_wc[i] - air_dry_wc)/(pwp_top_layer - air_dry_wc))^2,
+                       non_irr_sublayer_wc[i] <= air_dry_wc ~ 0)
+    non_irr_soil_water_evap[i] <- min(non_irr_soil_water_evap[i], max_attainable_non_irr_soil_water_evap[i])
+    non_irr_potential_evaporation <- max(0, non_irr_potential_evaporation - non_irr_soil_water_evap[i])
+  }
 
+  # irr_soil_water_evap <-
+  #   dplyr::case_when(irr_sublayer_wc > pwp_top_layer ~ irr_potential_evaporation,
+  #                    irr_sublayer_wc > air_dry_wc & irr_sublayer_wc <= pwp_top_layer ~
+  #                      irr_potential_evaporation*
+  #                      ((irr_sublayer_wc - air_dry_wc)/(pwp_top_layer - air_dry_wc))^2,
+  #                    irr_sublayer_wc <= air_dry_wc ~ 0)
+  #
+  # irr_soil_water_evap <- pmin(irr_soil_water_evap, max_attainable_irr_soil_water_evap)
+  # irr_potential_evaporation <- pmax(irr_potential_evaporation - irr_soil_water_evap, 0)
+  #
+  # non_irr_soil_water_evap <-
+  #   dplyr::case_when(non_irr_sublayer_wc > pwp_top_layer ~ non_irr_potential_evaporation,
+  #                    non_irr_sublayer_wc > air_dry_wc & non_irr_sublayer_wc <= pwp_top_layer ~
+  #                      non_irr_potential_evaporation*
+  #                      ((non_irr_sublayer_wc - air_dry_wc)/(pwp_top_layer - air_dry_wc))^2,
+  #                    non_irr_sublayer_wc <= air_dry_wc ~ 0)
+  # non_irr_soil_water_evap <- pmin(non_irr_soil_water_evap, max_attainable_non_irr_soil_water_evap)
+  # non_irr_potential_evaporation <- pmax(non_irr_potential_evaporation - non_irr_soil_water_evap, 0)
 
   irr_sublayer_wc <- irr_sublayer_wc - irr_soil_water_evap/(top_layer_thickness*water_density)
   non_irr_sublayer_wc <- non_irr_sublayer_wc - non_irr_soil_water_evap/(top_layer_thickness*water_density)

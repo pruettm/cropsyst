@@ -184,11 +184,10 @@ cs_run <- function(cs){
   cs$weather$dap <- seq.int(nrow(cs$weather))
 
   # Add Canopy cover data to weather data frame
-  cs$weather$gcc <- c(cs$canopy_cover$gcc,
-                      rep(0, nrow(cs$weather) - nrow(cs$canopy_cover)))
-  cs$weather$tcc <- c(cs$canopy_cover$tcc,
-                      rep(max(cs$canopy_cover$tcc),
-                          nrow(cs$weather) - nrow(cs$canopy_cover)))
+  cs$weather$gcc <- dplyr::lead(c(cs$canopy_cover$gcc,
+                      rep(1E-6, nrow(cs$weather) - nrow(cs$canopy_cover))), default = 1E-6)
+  cs$weather$tcc <- dplyr::lead(c(cs$canopy_cover$tcc,
+                      rep(1E-6,nrow(cs$weather) - nrow(cs$canopy_cover))), default = 1E-6)
 
   # lead canopy cover variables
   # lead_total_canopy_cover <-
@@ -216,6 +215,7 @@ cs_run <- function(cs){
   # Calc Crop height and Root depth
   cs$weather$crop_height <- calc_crop_height(cs$params$max_crop_height, cs$weather$tcc, cs$params$tree_fruit) # why is this not using the day before?
   cs$weather$root_depth <- calc_root_depth(cs$params$max_root_depth, cs$weather$tcc, cs$params$perrenial)
+
   cs$weather <-
     calc_potential_biomass_production(cs$weather,
                                       cs$params$transpiration_use_eff,
