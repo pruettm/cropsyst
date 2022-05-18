@@ -188,21 +188,21 @@ cs_run <- function(cs){
                           nrow(cs$weather) - nrow(cs$canopy_cover)))
 
   # lead canopy cover variables
-  lead_total_canopy_cover <-
-    c(cs$canopy_cover$tcc[2:length(cs$canopy_cover$tcc)],
-      rep(max(cs$weather$tcc), nrow(cs$weather) - nrow(cs$canopy_cover) + 1))
-  lead_green_canopy_cover <-
-    c(cs$canopy_cover$gcc[2:length(cs$canopy_cover$gcc)],
-      rep(0, nrow(cs$weather) - nrow(cs$canopy_cover) + 1))
+  # lead_total_canopy_cover <-
+  #   c(cs$canopy_cover$tcc[2:length(cs$canopy_cover$tcc)],
+  #     rep(max(cs$weather$tcc), nrow(cs$weather) - nrow(cs$canopy_cover) + 1))
+  # lead_green_canopy_cover <-
+  #   c(cs$canopy_cover$gcc[2:length(cs$canopy_cover$gcc)],
+  #     rep(0, nrow(cs$weather) - nrow(cs$canopy_cover) + 1))
 
-  cs$weather$gcc <- lead_green_canopy_cover
-  cs$weather$tcc <- lead_total_canopy_cover
+  # cs$weather$gcc <- lead_green_canopy_cover
+  # cs$weather$tcc <- lead_total_canopy_cover
 
   # calc potential crop et
   cs$weather <-
     calc_potential_crop_et(cs$weather,
-                           lead_total_canopy_cover,
-                           lead_green_canopy_cover,
+                           cs$weather$tcc,
+                           cs$weather$gcc,
                            cs$params$midseason_et_crop_coef,
                            cs$params$tree_fruit,
                            cs$params$fruit_harvest_date,
