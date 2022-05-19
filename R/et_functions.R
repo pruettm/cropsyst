@@ -45,15 +45,16 @@ calc_vapor_pressure_deficit <- function(es_tmax, es_tmin, ea){
 #'
 #' @examples cropsyst:::calc_potential_radiation(45, 233)
 calc_potential_radiation <- function(lat, doy){
+  const_pi <- 3.14159
   solar_constant <- 118.08
-  lat_rad <- lat * pi / 180.0
-  doy_sun_radians <- 2.0 * pi * doy / 365.0
+  lat_rad <- lat * const_pi / 180.0
+  doy_sun_radians <- 2.0 * const_pi * doy / 365.0
   dr <- 1.0 + 0.033 * cos(doy_sun_radians)
   sol_dec <- 0.409 * sin(doy_sun_radians - 1.39)
   sunset_hour_angle <- acos(-tan(lat_rad) * tan(sol_dec))
   term <- sunset_hour_angle * sin(lat_rad) * sin(sol_dec) +
     cos(lat_rad) * cos(sol_dec) * sin(sunset_hour_angle)
-  return(solar_constant * dr * term / pi)
+  return(solar_constant * dr * term / const_pi)
 }
 
 #' Calculate daily net radiation
@@ -78,7 +79,7 @@ calc_net_radiation <- function(pot_rad, sw_rad, ea, tmax, tmin, elevation){
   # Calculate humidity factor
   F_Hum = (0.34 - 0.14 * sqrt(ea))
   # Calculate Isothermal LW net radiation
-  LWR = 4.903e-9 * ((tmax + 273.0)^4 + (tmin + 273.0)^4) / 2.0
+  LWR = 4.903E-9 * ((tmax + 273.0)^4 + (tmin + 273.0)^4) / 2.0
   Rnl = LWR * F_Cloud * F_Hum
   return(Rns - Rnl)
 }
@@ -171,7 +172,7 @@ calc_reference_et <- function(lat,
   es_tmax <- calc_sat_vapor_pressure(tmax)
   es_tmin <- calc_sat_vapor_pressure(tmin)
 
-  delta <- 4098.0 * es_tmean / ((tmean + 237.3)^2)
+  delta <- 4098 * es_tmean / ((tmean + 237.3)^2)
   lambda <- 2.501 - (0.002361 * tmean)
   pressure <- 101.3 * ((293.0 - 0.0065 * elevation) / 293.0)^5.26
   gamma <- Cp * pressure / (0.622 * lambda)

@@ -154,7 +154,7 @@ cs_input <- cs_setup() %>%
   cs_add_irrigation(cs_irrigation, 
                     irrigated_fraction = 0.0001) %>% 
   cs_add_crop(planting_date = ydoy(2016, 131), 
-              harvest_date = ydoy(2016, 131+156-1),
+              season_end_date = ydoy(2016, 131+156-1),
               midseason_et_crop_coef = 1.15,
               tree_fruit = FALSE,
               fruit_harvest_date = ydoy(2016, 131+153),

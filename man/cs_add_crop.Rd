@@ -7,7 +7,7 @@
 cs_add_crop(
   cs,
   planting_date,
-  harvest_date,
+  season_end_date,
   midseason_et_crop_coef,
   tree_fruit,
   fruit_harvest_date,
@@ -24,7 +24,7 @@ cs_add_crop(
 
 \item{planting_date}{Planting date}
 
-\item{harvest_date}{Harvest date}
+\item{season_end_date}{Season end date}
 
 \item{midseason_et_crop_coef}{mid season ET crop coefficient}
 

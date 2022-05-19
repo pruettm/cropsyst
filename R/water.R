@@ -3,11 +3,11 @@ calc_potential_crop_et <- function(weather, total_canopy_cover, green_canopy_cov
   et_coef_at_canopy_cover_of_one <-
     (midseason_et_coef+max(total_canopy_cover)-1)/max(total_canopy_cover)
 
-  weather$adj_et_coef_cc_one <- et_coef_at_canopy_cover_of_one +
+  adj_et_coef_cc_one <- et_coef_at_canopy_cover_of_one +
     (0.04*(weather$wind_speed-2) - 0.004*(weather$rh_min-45)) *
     (max_crop_height/3)^3
 
-  weather$et_crop_coef <- 1 + (weather$adj_et_coef_cc_one-1)*total_canopy_cover
+  weather$et_crop_coef <- 1 + (adj_et_coef_cc_one-1)*total_canopy_cover
   weather$et_crop_coef[tree_fruit & weather$date >= fruit_harvest_date] <- 0.2
 
   weather$potential_crop_et <- weather$et_crop_coef*weather$ref_et

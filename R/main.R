@@ -120,7 +120,7 @@ cs_add_irrigation <- function(cs, irrigation,
 #'
 #' @param cs cropsyst object
 #' @param planting_date Planting date
-#' @param harvest_date Harvest date
+#' @param season_end_date Season end date
 #' @param midseason_et_crop_coef mid season ET crop coefficient
 #' @param tree_fruit logical TRUE if tree fruit crop
 #' @param fruit_harvest_date harvest date of tree fruit
@@ -134,7 +134,7 @@ cs_add_irrigation <- function(cs, irrigation,
 #' @return cropsyst object with added crop parameters
 #' @export
 #'
-cs_add_crop <- function(cs, planting_date, harvest_date,
+cs_add_crop <- function(cs, planting_date, season_end_date,
                         midseason_et_crop_coef, tree_fruit,
                         fruit_harvest_date, max_crop_height,
                         max_root_depth, perrenial,
@@ -142,7 +142,7 @@ cs_add_crop <- function(cs, planting_date, harvest_date,
                         transpiration_use_eff, C3){
   cs$params <- append(cs$params,
                       list(planting_date = planting_date,
-                           harvest_date = harvest_date,
+                           season_end_date = season_end_date,
                            midseason_et_crop_coef = midseason_et_crop_coef,
                            tree_fruit = tree_fruit,
                            fruit_harvest_date = fruit_harvest_date,
@@ -180,14 +180,14 @@ cs_run <- function(cs){
 
   # filter weather to crop growth period and add day after planting variable
   cs$weather <- cs$weather[cs$weather$date >= cs$params$planting_date &
-                             cs$weather$date <= cs$params$harvest_date, ]
+                             cs$weather$date <= cs$params$season_end_date, ]
   cs$weather$dap <- seq.int(nrow(cs$weather))
 
   # Add Canopy cover data to weather data frame
   cs$weather$gcc <- dplyr::lead(c(cs$canopy_cover$gcc,
                       rep(1E-6, nrow(cs$weather) - nrow(cs$canopy_cover))), default = 1E-6)
   cs$weather$tcc <- dplyr::lead(c(cs$canopy_cover$tcc,
-                      rep(1E-6,nrow(cs$weather) - nrow(cs$canopy_cover))), default = 1E-6)
+                      rep(0,nrow(cs$weather) - nrow(cs$canopy_cover))), default = 0)
 
   # lead canopy cover variables
   # lead_total_canopy_cover <-
