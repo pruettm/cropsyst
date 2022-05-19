@@ -164,8 +164,7 @@ cs_add_crop <- function(cs, planting_date, season_end_date,
 #' @export
 #'
 cs_run <- function(cs){
-
-  # calculate reference et and daytime vpd
+  # Reference et and process input weather data ####
   cs$weather <-
     cs_process_weather(cs$weather,
                        cs$params$latitude,
@@ -189,18 +188,7 @@ cs_run <- function(cs){
   cs$weather$tcc <- dplyr::lead(c(cs$canopy_cover$tcc,
                       rep(0,nrow(cs$weather) - nrow(cs$canopy_cover))), default = 0)
 
-  # lead canopy cover variables
-  # lead_total_canopy_cover <-
-  #   c(cs$canopy_cover$tcc[2:length(cs$canopy_cover$tcc)],
-  #     rep(max(cs$weather$tcc), nrow(cs$weather) - nrow(cs$canopy_cover) + 1))
-  # lead_green_canopy_cover <-
-  #   c(cs$canopy_cover$gcc[2:length(cs$canopy_cover$gcc)],
-  #     rep(0, nrow(cs$weather) - nrow(cs$canopy_cover) + 1))
-
-  # cs$weather$gcc <- lead_green_canopy_cover
-  # cs$weather$tcc <- lead_total_canopy_cover
-
-  # calc potential crop et
+  # Potential crop et ####
   cs$weather <-
     calc_potential_crop_et(cs$weather,
                            cs$weather$tcc,
@@ -212,7 +200,7 @@ cs_run <- function(cs){
 
 
 
-  # Calc Crop height and Root depth
+  # Crop height and Root depth ####
   cs$weather$crop_height <- calc_crop_height(cs$params$max_crop_height, cs$weather$tcc, cs$params$tree_fruit) # why is this not using the day before?
   cs$weather$root_depth <- calc_root_depth(cs$params$max_root_depth, cs$weather$tcc, cs$params$perrenial)
 
@@ -221,7 +209,7 @@ cs_run <- function(cs){
                                       cs$params$transpiration_use_eff,
                                       cs$params$C3)
 
-  # Combine weather and irrigation data
+  # Combine weather and irrigation data ####
   if("irrigation" %in% names(cs)){
     cs$weather <- merge(cs$weather, cs$irrigation, all.x = TRUE)
     cs$weather$irrigation[is.na(cs$weather$irrigation)] <- 0
@@ -231,29 +219,22 @@ cs_run <- function(cs){
   }
 
 
-  # Add variables for for loop
+  # Allocate variables for for loop ####
   cs$weather$canopy_interception <- 0
   cs$weather$today_canopy_interception <- 0
-
   cs$weather$irr_input <- 0
   cs$weather$non_irr_input <- 0
-
-  # Water Depth
   cs$weather$irr_initial_water_depth <- NA
   cs$weather$non_irr_initial_water_depth <- NA
-
-  # cs$weather$irr_drainage <- NA
-  # cs$weather$non_irr_drainage <- NA
-
+  cs$weather$irr_drainage <- NA
+  cs$weather$non_irr_drainage <- NA
   cs$weather$actual_transpiration <- NA
   cs$weather$water_stress_index <- NA
   cs$weather$leaf_water_potential <- NA
   cs$weather$canopy_stress_factor <- NA
   cs$weather$canopy_evaporation <- NA
-
   cs$weather$irr_zone_soil_water_evap <- NA
   cs$weather$non_irr_zone_soil_water_evap <- NA
-
   cs$weather$actual_evapotranspiration <- NA
 
   # Water content for first layer
@@ -267,11 +248,14 @@ cs_run <- function(cs){
 
   cs$soil$wc_0 <- cs$soil$initial_wc
 
+  # create irrigated and non irrigated soil variables
   cs$irr_soil <- cs$soil
   cs$non_irr_soil <- cs$soil
 
-  for (i in cs$weather$dap) {
 
+  # For Loop ####
+  for (i in cs$weather$dap) {
+    # Canopy Interception ####
     if (i > 1) {
       # Calc canopy interception
       cs$weather <-
@@ -288,6 +272,7 @@ cs_run <- function(cs){
     cs$weather$non_irr_initial_water_depth[i] <-
       sum(cs$non_irr_soil[[paste0("wc_", i-1)]]*cs$soil$layer_thickness*water_density)
 
+    # Water Infiltration ####
     irr_water_infiltration <-
       water_infiltration(cs$weather$irr_input[i],
                          cs$irr_soil[[paste0("wc_", i-1)]],
@@ -296,6 +281,8 @@ cs_run <- function(cs){
 
     cs$irr_soil[[paste0("wc_", i)]] <- irr_water_infiltration$wc
     update_wetted_layer <- irr_water_infiltration$update_wetted_layer
+    cs$weather$irr_drainage[i] <- irr_water_infiltration$drainage
+
 
     non_irr_water_infiltration <-
       water_infiltration(cs$weather$non_irr_input[i],
@@ -305,13 +292,9 @@ cs_run <- function(cs){
 
     cs$non_irr_soil[[paste0("wc_", i)]] <- non_irr_water_infiltration$wc
     update_non_wetted_layer <- non_irr_water_infiltration$update_wetted_layer
+    cs$weather$non_irr_drainage[i] <- non_irr_water_infiltration$drainage
 
-
-
-    # Skip drainage for now
-    # cs$weather$irr_drainage[i] <- pmax(cs$weather$irr_input[i] - max(irr_cum_capacity), 0)
-    # cs$weather$non_irr_drainage[i] <- pmax(cs$weather$non_irr_input[i] - max(non_irr_cum_capacity), 0)
-
+    # Actual Transpiration ####
     if (cs$params$irrigated_fraction == 0) {
       actual_transpiration_out <-
         actual_transpiration(cs$weather, cs$non_irr_soil, i,
@@ -325,6 +308,8 @@ cs_run <- function(cs){
     cs$weather <- actual_transpiration_out$weather
     soil_water_uptake <- actual_transpiration_out$soil_water_uptake
 
+
+    # Actual soil water evaporation ####
     evap <-
       actual_soil_water_evaporation(cs$weather, cs$irr_soil, cs$non_irr_soil,
                                     i, cs$params$irrigated_fraction,
@@ -346,6 +331,7 @@ cs_run <- function(cs){
     irr_sublayer_wc <- evap$irr_sublayer_wc
     non_irr_sublayer_wc <- evap$non_irr_sublayer_wc
 
+    # Final water content ####
     final_wc <-
       final_wc_update(cs$weather, cs$irr_soil, cs$non_irr_soil, i,
                       cs$params$irrigated_fraction, soil_water_uptake)
@@ -353,6 +339,8 @@ cs_run <- function(cs){
     cs$irr_soil <- final_wc$irr_soil
     cs$non_irr_soil <- final_wc$non_irr_soil
 
+
+    # Schedule Irrigation ####
     if(!"irrigation" %in% names(cs) & cs$params$irrigated_fraction > 0){
       if ("max_allowable_depletion" %in% names(cs$params)) {
         cs$weather <-
@@ -373,7 +361,7 @@ cs_run <- function(cs){
 
 
   }
-
+  # Calculate final biomass production ####
   cs$weather$biomass_production <-
     biomass_production(cs$weather$actual_transpiration,
                        cs$weather$daytime_vpd,

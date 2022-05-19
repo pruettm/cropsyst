@@ -74,7 +74,10 @@ water_infiltration <- function(input, wc_day_before, field_capacity, thickness, 
                    field_capacity[2:length(wc)],
                (input_left/
                   (thickness[2:length(wc)]*water_density)) + wc_day_before[2:length(wc)])
-  return(list(wc = wc, update_wetted_layer = update_wetted_layer))
+
+  drainage <- min(input_left)
+
+  return(list(wc = wc, update_wetted_layer = update_wetted_layer, drainage = drainage))
 }
 
 actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
