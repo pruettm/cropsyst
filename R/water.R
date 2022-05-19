@@ -89,16 +89,16 @@ actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
   water_potential_at_field_capacity <- -30
 
   if(weather$attainable_transpiration[dae] > weather$canopy_interception[dae]){
-    weather$attainable_transpiration[dae] <- weather$attainable_transpiration[dae] - weather$canopy_interception[dae]
+    transpiration_attainable <- weather$attainable_transpiration[dae] - weather$canopy_interception[dae]
     canopy_evaporation <- weather$canopy_interception[dae]
     weather$canopy_interception[dae] <- 0
   } else {
     weather$canopy_interception[dae] <- weather$canopy_interception[dae] - weather$attainable_transpiration[dae]
     canopy_evaporation <- weather$attainable_transpiration[dae]
-    weather$attainable_transpiration[dae] <- 1E-6
+    transpiration_attainable <- 1E-6
   }
 
-  potential_transpiration <- weather$attainable_transpiration[dae]
+  potential_transpiration <- transpiration_attainable
   frac_canopy_interception_sr <- weather$gcc[dae]
   max_water_uptake <- max_water_uptake_cc_one*frac_canopy_interception_sr
 
@@ -201,7 +201,6 @@ actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
 
   crop_uptake <- sum(soil_water_uptake)
 
-  # crop_uptake <- potential_transpiration
   water_stress_index <- ifelse(potential_transpiration > 0,
                 1 - crop_uptake/potential_transpiration,
                 0)
@@ -215,6 +214,9 @@ actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
                        leaf_water_potential >= stop_canopy_expansion &
                        leaf_water_potential <= wilt ~ 0,
                      TRUE ~ 1)
+
+  # crop_uptake <- if_else(leaf_water_potential < onset_canopy_stress &
+  #                          leaf_water_potential >= stop_canopy_expansion )
 
 
   # Add variables to weather data frame

@@ -66,7 +66,7 @@ biomass_production <- function(actual_transpiration,
                                C3,
                                transpiration_use_eff){
 
-  daytime_vpd <- pmax(daytime_vpd, 0.5)
+  # daytime_vpd <- pmax(daytime_vpd, 0.5)
 
   daily_transpiration_use_eff <- transpiration_use_eff/sqrt(daytime_vpd)
 
