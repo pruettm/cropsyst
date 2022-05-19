@@ -85,7 +85,7 @@ head(cs_soil)
 
 ### Additional Parameters
 
-- **thickness_evaporative_layer** location latitude (degrees)
+- **thickness_evaporative_layer** Thickness of soil evaporative layer (m)
 
 ## Canopy Cover
 
@@ -137,7 +137,7 @@ head(cs_irrigation)
 - **perrenial** logical TRUE if perennial
 - **max_water_uptake** max water uptake
 - **transpiration_use_eff** transpiration use efficiency
-- **C3** C3 = TRUE c4 = FALSE
+- **C3** C3 = TRUE C4 = FALSE
 
 
 # Model Setup
