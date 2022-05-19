@@ -42,9 +42,10 @@ calc_canopy_interception <- function(weather, dae, overhead_irrigation){
   return(weather)
 }
 
-water_infiltration <- function(input, wc_day_before, field_capacity, thickness){
+water_infiltration <- function(input, wc_day_before, field_capacity, thickness, dae){
 
   water_density <- 1000 #kg/m3
+  update_wetted_layer <- FALSE
 
   wc <- wc_day_before
 
@@ -52,6 +53,11 @@ water_infiltration <- function(input, wc_day_before, field_capacity, thickness){
     (field_capacity[1]-wc_day_before[1])*thickness[1]*water_density
 
   irr_storage_layer_1 <- min(available_storage_layer_1, input)
+
+  if (irr_storage_layer_1 > 0 | dae == 1) {
+    update_wetted_layer <- TRUE
+  }
+
   input <- max(input - available_storage_layer_1, 0)
 
   wc[1] <- wc_day_before[1] + (irr_storage_layer_1/(thickness[1]*water_density))
@@ -68,7 +74,7 @@ water_infiltration <- function(input, wc_day_before, field_capacity, thickness){
                    field_capacity[2:length(wc)],
                (input_left/
                   (thickness[2:length(wc)]*water_density)) + wc_day_before[2:length(wc)])
-  return(wc)
+  return(list(wc = wc, update_wetted_layer = update_wetted_layer))
 }
 
 actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
@@ -93,7 +99,7 @@ actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
   }
 
   potential_transpiration <- weather$attainable_transpiration[dae]
-  frac_canopy_interception_sr <- dplyr::lag(weather$gcc, default = 1E-6)[dae]
+  frac_canopy_interception_sr <- weather$gcc[dae]
   max_water_uptake <- max_water_uptake_cc_one*frac_canopy_interception_sr
 
   attainable_crop_uptake <- min(potential_transpiration, max_water_uptake)
@@ -102,16 +108,20 @@ actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
 
   # calculate root fraction
   root_fraction <- calc_root_fraction(soil$layer_thickness, weather$root_depth[dae])
+  if (weather$root_depth[dae] > sum(soil$layer_thickness) & sum(root_fraction) < 1) {
+    root_fraction <- root_fraction/sum(root_fraction)
+  }
 
   # Adjust plant hydraulic conductance based on soil dryness
-  root_hydraulic_cond = plant_hydraulic_cond / 0.65
-  top_hydraulic_cond = plant_hydraulic_cond / 0.35
+  root_hydraulic_cond <- plant_hydraulic_cond / 0.65
+  top_hydraulic_cond <- plant_hydraulic_cond / 0.35
 
   soil_water_potential <-
     calc_soil_water_potential(soil$horizon_bulk_density,
                               soil$air_entry_potential,
                               soil$b_value,
                               soil[[paste0("wc_", dae)]])
+
 
   root_activity_factor <-
     dplyr::if_else(soil_water_potential>water_potential_at_field_capacity,
@@ -124,7 +134,7 @@ actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
 
   layer_root_conductance_adjustment <- root_activity_factor*root_fraction
 
-  root_conductance_adjustment <- max(cumsum(layer_root_conductance_adjustment))
+  root_conductance_adjustment <- sum(layer_root_conductance_adjustment)
   layer_root_hydraulic_cond <- root_hydraulic_cond*layer_root_conductance_adjustment
 
   layer_top_hydraulic_conductance <-
@@ -149,7 +159,7 @@ actual_transpiration <- function(weather, soil, dae, max_water_uptake_cc_one){
 
   # Calculate Leaf Water Potential
   leaf_water_potential <- average_soil_water_potential -
-    attainable_crop_uptake/plant_hydraulic_cond
+    (attainable_crop_uptake/plant_hydraulic_cond)
 
 
   if (leaf_water_potential < onset_of_stress) {
@@ -245,8 +255,8 @@ calc_root_fraction <- function(thickness, root_depth){
 
 calc_soil_water_potential <-
   function(bulk_density, air_entry_potential, campbell_b, water_content){
-    saturation_water_content = 1 - bulk_density/2.65
-    water_potential <- air_entry_potential*(water_content/saturation_water_content)
+    saturation_water_content <- 1 - bulk_density/2.65
+    water_potential <- air_entry_potential*(water_content/saturation_water_content)^(-campbell_b)
     return(water_potential)
   }
 

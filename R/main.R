@@ -280,27 +280,31 @@ cs_run <- function(cs){
 
     # calculate soil water input after canopy interception
     cs$weather$irr_input[i] <- max(cs$weather$precip[i] + cs$weather$irrigation[i] - cs$weather$today_canopy_interception[i], 0)
-    cs$weather$non_irr_input[i] <- max(cs$weather$precip[i] - cs$weather$today_canopy_interception[i], 0)
+    # cs$weather$non_irr_input[i] <- max(cs$weather$precip[i] - cs$weather$today_canopy_interception[i], 0)
+    cs$weather$non_irr_input[i] <- max(cs$weather$precip[i], 0)
 
     cs$weather$irr_initial_water_depth[i] <-
       sum(cs$irr_soil[[paste0("wc_", i-1)]]*cs$soil$layer_thickness*water_density)
     cs$weather$non_irr_initial_water_depth[i] <-
       sum(cs$non_irr_soil[[paste0("wc_", i-1)]]*cs$soil$layer_thickness*water_density)
 
-    if (cs$weather$irr_input[i] > 0) {update_wetted_layer = TRUE}
-    if (cs$weather$non_irr_input[i] > 0) {update_non_wetted_layer = TRUE}
-
-    cs$irr_soil[[paste0("wc_", i)]] <-
+    irr_water_infiltration <-
       water_infiltration(cs$weather$irr_input[i],
                          cs$irr_soil[[paste0("wc_", i-1)]],
                          cs$soil$horizon_field_capacity,
-                         cs$soil$layer_thickness)
+                         cs$soil$layer_thickness, i)
 
-    cs$non_irr_soil[[paste0("wc_", i)]] <-
+    cs$irr_soil[[paste0("wc_", i)]] <- irr_water_infiltration$wc
+    update_wetted_layer <- irr_water_infiltration$update_wetted_layer
+
+    non_irr_water_infiltration <-
       water_infiltration(cs$weather$non_irr_input[i],
                          cs$non_irr_soil[[paste0("wc_", i-1)]],
                          cs$soil$horizon_field_capacity,
-                         cs$soil$layer_thickness)
+                         cs$soil$layer_thickness, i)
+
+    cs$non_irr_soil[[paste0("wc_", i)]] <- non_irr_water_infiltration$wc
+    update_non_wetted_layer <- non_irr_water_infiltration$update_wetted_layer
 
 
 
