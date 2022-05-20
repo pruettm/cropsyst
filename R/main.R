@@ -74,9 +74,9 @@ cs_add_canopy_cover <- function(cs, canopy_cover){
 #' Add irrigation data to cropsyst object
 #'
 #' @param cs cropsyst object
-#' @param irrigation irrigation data frame if missing auto irriagtion is applied
+#' @param irrigation irrigation data frame if missing auto irrigation is applied
 #' @param irrigated_fraction fraction of land irrigated in simulated area
-#' @param max_allowable_depletion Max soil water dfepletion which triggers irrigation
+#' @param max_allowable_depletion Max soil water depletion which triggers irrigation
 #' @param min_leaf_water_potential Min leaf water potential which triggers irrigation
 #' @param max_system_capacity Max irrigation daily capacity
 #' @param dae_first_irrigation Day after emergence of first irrigation
@@ -171,7 +171,7 @@ cs_run <- function(cs){
                        cs$params$elevation,
                        cs$params$screening_height)
 
-  # process soil and add inital water content if missing
+  # process soil and add initial water content if missing
   cs$soil <- cs_process_soil(cs$soil, cs$params$thickness_evaporative_layer)
   if (!"initial_wc" %in% names(cs$soil)) {
     cs$soil <- initialize_wc(cs$weather, cs$soil, cs$params$planting_date)

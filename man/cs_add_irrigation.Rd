@@ -18,11 +18,11 @@ cs_add_irrigation(
 \arguments{
 \item{cs}{cropsyst object}
 
-\item{irrigation}{irrigation data frame if missing auto irriagtion is applied}
+\item{irrigation}{irrigation data frame if missing auto irrigation is applied}
 
 \item{irrigated_fraction}{fraction of land irrigated in simulated area}
 
-\item{max_allowable_depletion}{Max soil water dfepletion which triggers irrigation}
+\item{max_allowable_depletion}{Max soil water depletion which triggers irrigation}
 
 \item{min_leaf_water_potential}{Min leaf water potential which triggers irrigation}
 
