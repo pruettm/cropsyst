@@ -183,10 +183,12 @@ cs_run <- function(cs){
   cs$weather$dap <- seq.int(nrow(cs$weather))
 
   # Add Canopy cover data to weather data frame
-  cs$weather$gcc <- dplyr::lead(c(cs$canopy_cover$gcc,
-                      rep(1E-6, nrow(cs$weather) - nrow(cs$canopy_cover))), default = 1E-6)
-  cs$weather$tcc <- dplyr::lead(c(cs$canopy_cover$tcc,
-                      rep(0,nrow(cs$weather) - nrow(cs$canopy_cover))), default = 0)
+  # NOTE change to merge by date
+  # NOTE how should empty values be filled
+  cs$weather$gcc <- c(cs$canopy_cover$gcc,
+                      rep(1E-6, nrow(cs$weather) - nrow(cs$canopy_cover)))
+  cs$weather$tcc <- c(cs$canopy_cover$tcc,
+                      rep(max(cs$canopy_cover$tcc), nrow(cs$weather) - nrow(cs$canopy_cover)))
 
   # Potential crop et ####
   cs$weather <-
@@ -264,6 +266,7 @@ cs_run <- function(cs){
 
     # calculate soil water input after canopy interception
     cs$weather$irr_input[i] <- max(cs$weather$precip[i] + cs$weather$irrigation[i] - cs$weather$today_canopy_interception[i], 0)
+    # NOTE shoiuld canopy interception be subrtracted from non irrigated input?
     # cs$weather$non_irr_input[i] <- max(cs$weather$precip[i] - cs$weather$today_canopy_interception[i], 0)
     cs$weather$non_irr_input[i] <- max(cs$weather$precip[i], 0)
 

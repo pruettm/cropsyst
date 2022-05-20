@@ -72,7 +72,7 @@ calc_potential_radiation <- function(lat, doy){
 calc_net_radiation <- function(pot_rad, sw_rad, ea, tmax, tmin, elevation){
   albedo = 0.23
   Rns = (1.0 - albedo) * sw_rad
-  # Rso = pot_rad * (0.75 + elevation * 2.e-5)
+  # Rso = pot_rad * (0.75 + elevation * 2.e-5) # added elevation
   Rso = pot_rad * (0.75)
   # Calculate cloud factor
   F_Cloud = 1.35 * (sw_rad / Rso) - 0.35
